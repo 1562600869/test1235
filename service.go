@@ -22,6 +22,9 @@ func AddMaterial(store *Store, p AddMaterialParams) error {
 	if p.Name == "" {
 		return errors.New("材料名称不能为空")
 	}
+	if !p.Type.IsValid() {
+		return errors.New("材料类型只能是：针叶木、阔叶木、人造板、竹材、其他")
+	}
 	if p.Unit == "" {
 		return errors.New("单位不能为空")
 	}
@@ -124,15 +127,14 @@ func AddOrder(store *Store, p AddOrderParams) error {
 		if existing := FindOrder(db, p.ID); existing != nil {
 			return fmt.Errorf("订单ID %s 已存在", p.ID)
 		}
-		m := FindMaterial(db, p.MaterialID)
-		if m == nil {
-			return fmt.Errorf("材料ID %s 不存在", p.MaterialID)
+		affected, m, err := db.DeductStock(p.MaterialID, p.Qty)
+		if err != nil {
+			return err
 		}
-		if m.Stock < p.Qty {
+		if affected == 0 {
 			return fmt.Errorf("库存不足，当前库存 %d %s，还需 %d %s",
 				m.Stock, m.Unit, p.Qty-m.Stock, m.Unit)
 		}
-		m.Stock -= p.Qty
 		db.Orders = append(db.Orders, Order{
 			ID:           p.ID,
 			Client:       p.Client,
@@ -163,15 +165,13 @@ func CompleteOrder(store *Store, p CompleteParams) error {
 	}
 
 	_, err := store.Transaction(func(db *Database) error {
-		o := FindOrder(db, p.ID)
-		if o == nil {
-			return fmt.Errorf("订单ID %s 不存在", p.ID)
+		affected, o, err := db.TransitionOrderStatus(p.ID, StatusPending, StatusFinished, p.Date)
+		if err != nil {
+			return err
 		}
-		if o.Status != StatusPending {
+		if affected == 0 {
 			return fmt.Errorf("订单当前状态为 %s，只有待加工状态才能完成", o.Status)
 		}
-		o.Status = StatusFinished
-		o.CompleteDate = p.Date
 		return nil
 	})
 	return err
@@ -198,8 +198,10 @@ func MonthlyReport(store *Store, month string) ([]MonthlyResult, error) {
 		matTypeMap[m.ID] = m.Type
 	}
 
+	allTypes := AllMaterialTypes()
+
 	resultMap := make(map[MaterialType]*MonthlyResult)
-	for _, t := range []MaterialType{TypeNeedleLeaf, TypeBroadLeaf, TypeManMade, TypeBamboo, TypeOther} {
+	for _, t := range allTypes {
 		resultMap[t] = &MonthlyResult{Type: t, OrderCount: 0, Revenue: 0}
 	}
 
@@ -215,8 +217,8 @@ func MonthlyReport(store *Store, month string) ([]MonthlyResult, error) {
 		}
 	}
 
-	results := make([]MonthlyResult, 0, 5)
-	for _, t := range []MaterialType{TypeNeedleLeaf, TypeBroadLeaf, TypeManMade, TypeBamboo, TypeOther} {
+	results := make([]MonthlyResult, 0, len(allTypes))
+	for _, t := range allTypes {
 		results = append(results, *resultMap[t])
 	}
 

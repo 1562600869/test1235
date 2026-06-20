@@ -23,12 +23,20 @@ var ValidMaterialTypes = map[MaterialType]bool{
 	TypeOther:      true,
 }
 
+func (mt MaterialType) IsValid() bool {
+	return ValidMaterialTypes[mt]
+}
+
 func ParseMaterialType(s string) (MaterialType, error) {
 	t := MaterialType(strings.TrimSpace(s))
-	if ValidMaterialTypes[t] {
+	if t.IsValid() {
 		return t, nil
 	}
 	return "", errors.New("材料类型只能是：针叶木、阔叶木、人造板、竹材、其他")
+}
+
+func AllMaterialTypes() []MaterialType {
+	return []MaterialType{TypeNeedleLeaf, TypeBroadLeaf, TypeManMade, TypeBamboo, TypeOther}
 }
 
 type OrderStatus string

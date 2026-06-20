@@ -7,14 +7,6 @@
       "unit": "张",
       "stock": 110,
       "cost": 35
-    },
-    {
-      "id": "M002",
-      "name": "橡木板",
-      "type": "阔叶木",
-      "unit": "张",
-      "stock": 45,
-      "cost": 60
     }
   ],
   "inbound_records": [
@@ -36,17 +28,6 @@
       "date": "2024-03-20",
       "status": "已完成",
       "complete_date": "2024-03-25"
-    },
-    {
-      "id": "O003",
-      "client": "王总",
-      "material_id": "M002",
-      "qty": 5,
-      "product": "餐桌",
-      "price": 880,
-      "date": "2024-03-22",
-      "status": "已完成",
-      "complete_date": "2024-03-28"
     }
   ]
 }

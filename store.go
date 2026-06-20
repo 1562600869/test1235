@@ -119,6 +119,33 @@ func (s *Store) Transaction(fn TxFunc) (*Database, error) {
 	return db, nil
 }
 
+func (db *Database) DeductStock(materialID string, qty int) (int, *Material, error) {
+	for i := range db.Materials {
+		if db.Materials[i].ID == materialID {
+			if db.Materials[i].Stock >= qty {
+				db.Materials[i].Stock -= qty
+				return 1, &db.Materials[i], nil
+			}
+			return 0, &db.Materials[i], nil
+		}
+	}
+	return 0, nil, fmt.Errorf("材料ID %s 不存在", materialID)
+}
+
+func (db *Database) TransitionOrderStatus(orderID string, from OrderStatus, to OrderStatus, completeDate string) (int, *Order, error) {
+	for i := range db.Orders {
+		if db.Orders[i].ID == orderID {
+			if db.Orders[i].Status == from {
+				db.Orders[i].Status = to
+				db.Orders[i].CompleteDate = completeDate
+				return 1, &db.Orders[i], nil
+			}
+			return 0, &db.Orders[i], nil
+		}
+	}
+	return 0, nil, fmt.Errorf("订单ID %s 不存在", orderID)
+}
+
 func FindMaterial(db *Database, id string) *Material {
 	for i := range db.Materials {
 		if db.Materials[i].ID == id {
